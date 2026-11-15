@@ -155,9 +155,9 @@ The notes remain ordinary Markdown in [notes/](../notes/). The Further reading p
 
 ## Planned features
 
-These are future experiments, separate from the ten implemented lessons. The new subject-based notes have a detailed [visual sequence and implementation plan](../plans/research-notes-visuals.md).
+These are future experiments, separate from the ten implemented lessons.
 
-Next from those notes:
+Planned research visuals:
 
 | Planned visual                            | What the interaction will teach                                                                                                            |
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -188,5 +188,3 @@ Further foundations and STARK visuals:
 | Counterexample workbench             | Load Rust-generated or formally checked fixtures and inspect their words and agreement sets.                    |
 
 Future MCA extensions can compare radius-versus-error profiles, additional challenge distributions, and certified bounds. Any worst-case claim needs a sourced theorem with its hypotheses; the implemented finite examples do not establish one.
-
-The longer design and implementation plan is [plans/rs-visual-lab.md](../plans/rs-visual-lab.md).
