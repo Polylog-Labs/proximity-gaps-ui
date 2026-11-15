@@ -130,7 +130,7 @@ export const lessons: LessonDefinition[] = [
     shortTitle: 'Proximity Prize',
     group: 'Agreement & soundness',
     description:
-      'Vary delta and compute the exact worst-case MCA error for a tiny smooth-domain code.',
+      'Vary delta and compute exact MCA error probabilities for eight-position input pairs.',
     question: 'How much error can we allow while keeping every input pair below a target?',
     noteSection: 'Mutual correlated agreement',
     noteSource: 'soundness',

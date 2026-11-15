@@ -1,7 +1,7 @@
 import { encode, SUPPORTED_FIELDS } from '../core/math';
 import { MCA_PRESETS, type McaSettings } from '../core/agreement';
 import { RLC_DOMAIN, RLC_Q, type LinearCombinationSettings } from '../core/linearCombination';
-import type { PrizeSettings } from '../core/proximityPrize';
+import { DEFAULT_PRIZE, PRIZE_N, PRIZE_Q, type PrizeSettings } from '../core/proximityPrize';
 import { MESSAGE_K, MESSAGE_MAX_N, MESSAGE_Q, type MessageSettings } from '../core/message';
 
 export const LESSON_IDS = [
@@ -135,11 +135,13 @@ export function validExperiment(value: unknown): value is Experiment {
     const prize = s.prize as Record<string, unknown>;
     if (
       ![prize.f, prize.g].every(
-        (row) => Array.isArray(row) && row.length === 4 && row.every((a) => integer(a, 0, 4)),
+        (row) =>
+          Array.isArray(row) &&
+          row.length === PRIZE_N &&
+          row.every((a) => integer(a, 0, PRIZE_Q - 1)),
       ) ||
-      !integer(prize.alpha, 0, 4) ||
-      !integer(prize.radius, 0, 4) ||
-      (prize.followWorst !== undefined && typeof prize.followWorst !== 'boolean')
+      !integer(prize.alpha, 0, PRIZE_Q - 1) ||
+      !integer(prize.radius, 0, PRIZE_N)
     )
       return false;
   }
@@ -254,6 +256,25 @@ export function readLocation(
     try {
       if (raw.length > 10_000) throw new Error('Oversized state');
       const parsed: unknown = JSON.parse(raw);
+      // The previous Prize used four entries over F₅. Load the larger example
+      // explicitly while retaining settings for all the other lessons.
+      if (parsed && typeof parsed === 'object' && 'prize' in parsed) {
+        const old = parsed.prize as Record<string, unknown> | null;
+        if (
+          old &&
+          [old.f, old.g].every(
+            (row) => Array.isArray(row) && row.length === 4 && row.every((a) => integer(a, 0, 4)),
+          ) &&
+          integer(old.alpha, 0, 4) &&
+          integer(old.radius, 0, 4) &&
+          (old.followWorst === undefined || typeof old.followWorst === 'boolean')
+        ) {
+          parsed.prize = DEFAULT_PRIZE;
+          if (lesson === 'proximity-prize')
+            notice =
+              'Proximity Prize now uses the eight-point F₁₇ code from MCA. Loaded its starting vectors.';
+        }
+      }
       // Old links used a different F₅ toy model. Preserve the other lessons' settings,
       // but explicitly load the new article example instead of reinterpreting those vectors.
       if (parsed && typeof parsed === 'object' && 'mca' in parsed) {

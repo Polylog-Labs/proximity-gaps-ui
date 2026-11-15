@@ -4,7 +4,7 @@ import { Definition } from '../components/Controls';
 import { MathText } from '../components/Math';
 import { FurtherReading } from '../components/FurtherReading';
 import { BINARY_WORDS, binaryWord, distance, ballSize, termTex } from '../core/math';
-import { PRIZE_Q, PRIZE_N } from '../core/proximityPrize';
+import { PRIZE_Q, PRIZE_N, PRIZE_K } from '../core/proximityPrize';
 import { useExperiment } from '../state/ExperimentContext';
 import './FurtherReadingPage.css';
 
@@ -324,27 +324,29 @@ export default function FurtherReadingPage() {
         <Definition title="Why call it probability?">
           {' '}
           <p>
-            <strong>Why “probability”?</strong> α is sampled uniformly: 2 bad values out of 5 give
-            an exact 2/5 chance of an MCA error. Brute force computes this probability; the
+            <strong>Why “probability”?</strong> α is sampled uniformly: 2 bad values out of 17 give
+            an exact 2/17 chance of an MCA error. Enumeration computes this probability; the
             randomness comes from choosing α, not from a missing formula.
           </p>
         </Definition>
-        <Definition title="Exact computation, the δ boundary, and the real Proximity Prize">
+        <Definition title="Exact pair probabilities and the real Proximity Prize">
           <p>
-            Brute-force computed in your browser:{' '}
-            {(PRIZE_Q ** (2 * PRIZE_N)).toLocaleString('en-US')} input pairs × 5 challenges × 5
-            codewords. These are exact counts, not random samples. The chart takes the largest
-            failure probability over all input pairs.
+            Proximity Prize uses the same code as MCA: {PRIZE_N} positions over F₁₇, degree less
+            than {PRIZE_K}, and {PRIZE_Q ** PRIZE_K} codewords. For the displayed f and g, the chart
+            checks all {PRIZE_Q} challenges and every codeword at each δ threshold. These are exact
+            counts for this pair, not a maximum over all input pairs.
           </p>
           <p>
-            Between thresholds the probability is constant. Every{' '}
-            <MathText>{'0\\le\\delta<1/2'}</MathText> meets the toy target. At δ = 1/2 the
-            worst-case error becomes 1, so 1/4 is the largest tested grid value and 1/2 is the
-            excluded boundary.
+            The starting vectors agree with the zero codeword on six positions. At α = 3 or 10, the
+            combination agrees on seven positions, but neither input has a codeword explanation on
+            all seven. At δ = 1/4, only six positions are required, so these two challenges are MCA
+            errors. Reset opens α = 3 with that seven-position witness visible.
           </p>
           <p>
-            For each α, all five codewords are checked. One failing S makes α bad; a failing witness
-            is shown if one exists. u₀ and u₁ are chosen to best match that S.
+            Increasing δ keeps f and g fixed and admits smaller agreement sets. For each α, all 289
+            codewords are checked. One failing S makes α bad; a failing witness is shown if one
+            exists, even when a nearer codeword has explanations. u₀ and u₁ are chosen to best match
+            the displayed S.
           </p>
           <section className="prize-explainer" aria-label="The real Proximity Prize">
             <h3>From a tiny example to the real question</h3>
@@ -359,23 +361,24 @@ export default function FurtherReadingPage() {
                 Grand MCA challenge
               </a>{' '}
               asks how large δ can be while this worst-case error stays below a target such as{' '}
-              <MathText>{'\\varepsilon^*=2^{-128}'}</MathText>. This page uses 2/5 so the change is
-              visible.
+              <MathText>{'\\varepsilon^*=2^{-128}'}</MathText>. This page compares the displayed
+              pair with a teaching target of 2/17. Meeting that target for one pair does not
+              establish the worst-case guarantee.
             </p>
             <p>
-              Here C has just five codewords. In a large Reed–Solomon code,{' '}
-              <MathText>{'|C|=|\\mathbb F|^k'}</MathText>, and there are{' '}
-              <MathText>{'|\\mathbb F|^{2n}'}</MathText> input pairs. Exhaustive enumeration is
-              computationally infeasible at cryptographic sizes. The research goal is a provable
-              formula or tight bound that applies to every pair, without enumerating them.
+              Here C has 289 codewords but already <MathText>{'17^{16}'}</MathText> input pairs. We
+              do not exhaustively search those pairs. In general there are{' '}
+              <MathText>{'|\\mathbb F|^{2n}'}</MathText> pairs, so enumeration becomes infeasible as
+              the code grows. The research goal is a provable formula or tight bound that applies to
+              every pair, without enumerating them.
             </p>
           </section>
         </Definition>
-        <Definition title="Why the worst-case example changes with δ">
+        <Definition title="Why keep the input pair fixed while changing δ?">
           <p>
-            For each δ, the page can load a pair attaining the worst-case error. These can be
-            different pairs. Turn off “Follow worst pair” to keep f and g fixed while changing δ;
-            editing either vector also turns it off.
+            Keeping f and g fixed makes the effect of the agreement threshold visible. Editing
+            either vector recomputes the entire curve; changing α only selects which challenge to
+            inspect. “Show MCA error” selects a failing challenge when one exists.
           </p>
           <p>
             If a fixed pair has a challenge α₀ with{' '}
@@ -395,15 +398,17 @@ export default function FurtherReadingPage() {
         <Definition title="Why these parameters work">
           <p>
             <MathText>
-              {'C=\\operatorname{RS}[\\mathbb F_5,D,1],\\quad D=\\{1,2,4,3\\}=\\langle2\\rangle'}
+              {
+                'C=\\operatorname{RS}[\\mathbb F_{17},D,2],\\quad D=\\{1,2,4,8,16,15,13,9\\}=\\langle2\\rangle'
+              }
             </MathText>
-            . The domain is a multiplicative subgroup of order <MathText>{'4=2^2'}</MathText>:
-            successive powers of 2 modulo 5 return to 1. Its order is a power of two, so it is
-            smooth and FFT-friendly. The MCA page’s eight-point domain over F₁₇ is also smooth.
+            . The domain is a multiplicative subgroup of order <MathText>{'8=2^3'}</MathText>:
+            successive powers of 2 modulo 17 return to 1. Its order is a power of two, so it is
+            smooth and FFT-friendly. Both pages use exactly the same code.
           </p>
           <p>
-            With k = 1, polynomials are constant and the rate is 1/4. C consists of [0,0,0,0],
-            [1,1,1,1], …, [4,4,4,4]. This makes every nearest-codeword comparison visible.
+            With k = 2, the polynomials have the form a + bX, including constants and zero. There
+            are 17² = 289 codewords, each with eight entries, and the rate is 2/8 = 1/4.
           </p>
           <p>
             A larger δ permits smaller S. Several codewords may then qualify. We check the full
@@ -412,9 +417,9 @@ export default function FurtherReadingPage() {
             Differences outside S are allowed.
           </p>
           <p>
-            The displayed pair can be much better than the worst pair. Editing f and g changes the
-            pair’s probability; the worst-case curve depends only on C and δ. “Load worst pair”
-            supplies an input pair attaining the exhaustive maximum at the selected threshold.
+            The displayed pair can be much better than the worst pair. Its probability is a lower
+            bound on the worst-case probability. Establishing an upper bound for every pair requires
+            a separate mathematical argument.
           </p>
         </Definition>
         <Definition title="What the full FRI protocol adds">

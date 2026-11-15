@@ -4,6 +4,7 @@ import { expect, it } from 'vitest';
 import App from '../src/App';
 import { ExperimentProvider } from '../src/state/ExperimentContext';
 import { defaultExperiment, experimentUrl } from '../src/state/model';
+import { DEFAULT_PRIZE } from '../src/core/proximityPrize';
 
 function start() {
   window.history.replaceState(null, '', experimentUrl('proximity-prize', defaultExperiment()));
@@ -13,49 +14,36 @@ function start() {
     </ExperimentProvider>,
   );
 }
-it('adjusts delta, compares the true maximum, loads a worst pair, and preserves links', async () => {
+it('shows eight aligned coordinates and a qualifying seven-point S, and shares edited field values', async () => {
   const user = userEvent.setup();
   const { container, unmount } = start();
-  const delta = await screen.findByRole('slider', { name: 'Delta' });
-  expect(delta).toHaveValue('1');
-  expect(screen.getByTestId('prize-pair-count')).toHaveTextContent('2/5');
-  expect(screen.getByTestId('prize-worst-count')).toHaveTextContent('2/5');
-  expect(screen.getByRole('status', { name: 'Prize target' })).toHaveTextContent('Target met');
+  expect(await screen.findByRole('slider', { name: 'Delta' })).toHaveValue('2');
+  expect(screen.getByTestId('prize-pair-count')).toHaveTextContent('2/17');
+  expect(screen.getByText('7 of 8 points · need at least 6')).toBeInTheDocument();
   expect(screen.getByRole('status', { name: 'Prize MCA result' })).toHaveTextContent('MCA error');
   expect(
-    within(screen.getByRole('group', { name: 'All 5 alpha values' })).getAllByRole('button'),
-  ).toHaveLength(5);
-  await user.click(screen.getByRole('button', { name: 'Delta 2/4, worst-case error 5/5' }));
-  expect(delta).toHaveValue('2');
-  expect(screen.getByTestId('prize-pair-count')).toHaveTextContent('5/5');
-  expect(screen.getByTestId('prize-worst-count')).toHaveTextContent('5/5');
-  expect(screen.getByRole('status', { name: 'Prize target' })).toHaveTextContent('Target exceeded');
-  expect(screen.getByRole('checkbox', { name: 'Follow worst pair' })).toBeChecked();
-  expect(screen.getByTestId('prize-pair-count')).toHaveTextContent('5/5');
+    within(screen.getByRole('group', { name: 'All 17 alpha values' })).getAllByRole('button'),
+  ).toHaveLength(17);
+  for (const label of ['Vector f', 'Vector g', 'Combination h'])
+    expect(
+      screen.getByLabelText(label, { selector: 'tr' }).querySelectorAll('.mca-cell'),
+    ).toHaveLength(8);
   await user.click(screen.getByRole('checkbox', { name: 'Only show S' }));
-  const h = screen.getByLabelText('Combination h', { selector: 'tr' });
-  expect(h.querySelectorAll('[data-in-support="false"]')).toHaveLength(0);
-  fireEvent.change(delta, { target: { value: '0' } });
-  expect(screen.getByRole('status', { name: 'Prize MCA result' })).toHaveTextContent('MCA error');
-  expect(screen.getByTestId('prize-worst-count')).toHaveTextContent('1/5');
-  expect(screen.getByTestId('prize-pair-count')).toHaveTextContent('1/5');
-  expect(screen.getByText('4 of 4 points · need at least 4')).toBeInTheDocument();
+  expect(
+    screen.getByLabelText('Combination h', { selector: 'tr' }).querySelectorAll('.mca-cell'),
+  ).toHaveLength(7);
   await user.click(screen.getByRole('button', { name: 'Reset example' }));
-  // Alpha editing must wrap in the new field, not the other lesson's F17.
+  expect(screen.getByRole('checkbox', { name: 'Only show S' })).not.toBeChecked();
   const alpha = screen.getByRole('spinbutton', { name: 'Prize alpha, position 1' });
-  fireEvent.change(alpha, { target: { value: '7' } });
+  fireEvent.change(alpha, { target: { value: '27' } });
   fireEvent.blur(alpha);
-  expect(alpha).toHaveValue(2);
-  fireEvent.change(screen.getByRole('spinbutton', { name: 'Prize f, position 2, x = 2' }), {
-    target: { value: '9' },
-  });
-  expect(JSON.parse(new URLSearchParams(window.location.search).get('s')!).prize).toMatchObject({
-    f: [0, 4, 0, 0],
-    alpha: 2,
-    radius: 1,
-    followWorst: false,
-  });
-  expect(screen.getByRole('checkbox', { name: 'Follow worst pair' })).not.toBeChecked();
+  expect(alpha).toHaveValue(10);
+  const symbol = screen.getByRole('spinbutton', { name: 'Prize f, position 7, x = 13' });
+  fireEvent.change(symbol, { target: { value: '24' } });
+  fireEvent.blur(symbol);
+  expect(symbol).toHaveValue(7);
+  const saved = JSON.parse(new URLSearchParams(window.location.search).get('s')!);
+  expect(saved.prize).toEqual({ ...DEFAULT_PRIZE, alpha: 10 });
   expect(container.querySelector('.katex-error')).toBeNull();
   unmount();
   render(
@@ -63,23 +51,36 @@ it('adjusts delta, compares the true maximum, loads a worst pair, and preserves 
       <App />
     </ExperimentProvider>,
   );
-  expect(await screen.findByRole('spinbutton', { name: 'Prize f, position 2, x = 2' })).toHaveValue(
-    4,
+  expect(await screen.findByRole('spinbutton', { name: 'Prize alpha, position 1' })).toHaveValue(
+    10,
   );
+  expect(screen.getByRole('spinbutton', { name: 'Prize f, position 7, x = 13' })).toHaveValue(7);
 });
 
-it('distinguishes a custom pair from the worst case without changing its vectors', async () => {
+it('keeps vectors fixed across thresholds and distinguishes pair probabilities from a worst-case bound', async () => {
   const user = userEvent.setup();
   start();
-  await user.click(await screen.findByRole('checkbox', { name: 'Follow worst pair' }));
-  await user.click(screen.getByRole('button', { name: 'Delta 2/4, worst-case error 5/5' }));
-  expect(screen.getByTestId('prize-pair-count')).toHaveTextContent('3/5');
-  expect(screen.getByTestId('prize-worst-count')).toHaveTextContent('5/5');
-  expect(screen.getByRole('button', { name: 'Delta 2/4, worst-case error 5/5' })).toHaveTextContent(
-    'This pair: 3/5',
+  const delta = await screen.findByRole('slider', { name: 'Delta' });
+  expect(screen.getByText(/worst case over all input pairs is not computed/)).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'Delta 5/8, pair error 8/17' }));
+  expect(delta).toHaveValue('5');
+  expect(screen.getByTestId('prize-pair-count')).toHaveTextContent('8/17');
+  expect(screen.getByRole('status', { name: 'Prize target' })).toHaveTextContent(
+    'Pair target exceeded',
   );
-  const custom = JSON.parse(new URLSearchParams(window.location.search).get('s')!).prize;
-  expect(custom.f).toEqual([0, 1, 0, 0]);
-  await user.click(screen.getByRole('checkbox', { name: 'Follow worst pair' }));
-  expect(screen.getByTestId('prize-pair-count')).toHaveTextContent('5/5');
+  const saved = JSON.parse(new URLSearchParams(window.location.search).get('s')!).prize;
+  expect(saved.f).toEqual(DEFAULT_PRIZE.f);
+  expect(saved.g).toEqual(DEFAULT_PRIZE.g);
+  fireEvent.change(delta, { target: { value: '0' } });
+  expect(screen.getByTestId('prize-pair-count')).toHaveTextContent('0/17');
+  expect(screen.getByRole('status', { name: 'Prize MCA result' })).toHaveTextContent(
+    'No qualifying agreement',
+  );
+  expect(screen.queryByRole('button', { name: 'Show MCA error' })).toBeNull();
+  await user.click(screen.getByRole('button', { name: 'Reset example' }));
+  await user.click(screen.getByRole('button', { name: 'Alpha 2: MCA agreement' }));
+  expect(screen.getByText('6 of 8 points · need at least 6')).toBeInTheDocument();
+  await user.click(screen.getByRole('button', { name: 'Show MCA error' }));
+  expect(screen.getByText('7 of 8 points · need at least 6')).toBeInTheDocument();
+  expect(screen.getByRole('status', { name: 'Prize MCA result' })).toHaveTextContent('MCA error');
 });

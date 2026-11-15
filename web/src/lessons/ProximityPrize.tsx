@@ -1,17 +1,16 @@
 import { useMemo, useState } from 'react';
 import { RotateCcw } from 'lucide-react';
 import { AgreementTapes } from '../components/AgreementTapes';
-import { Slider, Toggle } from '../components/Controls';
+import { Slider } from '../components/Controls';
 import { MathText } from '../components/Math';
 import {
   analyzePrize,
-  bruteForcePrizeWorstCase,
   DEFAULT_PRIZE,
   PRIZE_DOMAIN,
   PRIZE_N,
   PRIZE_Q,
   PRIZE_TARGET_COUNT,
-  prizePairProfile,
+  prizeCodewords,
   type PrizeSettings,
 } from '../core/proximityPrize';
 import { useExperiment } from '../state/ExperimentContext';
@@ -21,35 +20,20 @@ export default function ProximityPrize() {
   const { experiment, patch } = useExperiment();
   const settings = experiment.prize ?? DEFAULT_PRIZE;
   const [onlySupport, setOnlySupport] = useState(false);
-  const worst = useMemo(bruteForcePrizeWorstCase, []);
   const analysis = useMemo(
     () => analyzePrize(settings.f, settings.g, settings.radius),
     [settings.f, settings.g, settings.radius],
   );
-  const profile = useMemo(() => prizePairProfile(settings.f, settings.g), [settings.f, settings.g]);
-  const followWorst = settings.followWorst ?? false;
+  const { profile } = analysis;
   const selected = analysis.challenges[settings.alpha];
   const [u0, u1] = selected.inputs;
   const minAgreement = PRIZE_N - settings.radius;
-  function worstSettings(radius: number): PrizeSettings {
-    const pair = worst.witnesses[radius];
-    const result = analyzePrize(pair.f, pair.g, radius);
-    return {
-      ...pair,
-      radius,
-      alpha: result.challenges.find((c) => c.bad)?.alpha ?? 0,
-      followWorst: true,
-    };
-  }
   const update = (change: Partial<PrizeSettings>) => {
-    const next =
-      change.radius !== undefined && followWorst
-        ? worstSettings(change.radius)
-        : { ...settings, ...change, ...(change.f || change.g ? { followWorst: false } : {}) };
-    patch({ prize: next });
+    patch({ prize: { ...settings, ...change } });
   };
-  const safe = worst.counts[settings.radius] <= PRIZE_TARGET_COUNT;
-  const largestGridRadius = worst.counts.reduce(
+  const failingChallenge = analysis.challenges.find((challenge) => challenge.bad);
+  const safe = analysis.badCount <= PRIZE_TARGET_COUNT;
+  const largestGridRadius = profile.reduce(
     (best, count, radius) => (count <= PRIZE_TARGET_COUNT ? radius : best),
     -1,
   );
@@ -72,7 +56,7 @@ export default function ProximityPrize() {
     <div className="mca-lesson prize-lesson">
       <header className="mca-heading">
         <h2>Proximity Prize</h2>
-        <p>How much disagreement can we allow while keeping MCA errors rare?</p>
+        <p>The same eight-point code as MCA. Vary δ and compare agreement on S.</p>
       </header>
       <section
         className="experiment-panel prize-overview"
@@ -84,50 +68,52 @@ export default function ProximityPrize() {
             <p>Smaller S qualifies → error probability rises or stays flat. It never decreases.</p>
           </div>
           <span className="prize-target-label">
-            Toy target: at most <strong>2/5</strong>
+            Pair target: at most{' '}
+            <strong>
+              {PRIZE_TARGET_COUNT}/{PRIZE_Q}
+            </strong>
           </span>
         </div>
         <div className="prize-profile-grid" role="group" aria-label="Delta thresholds">
-          {worst.counts.map((count, radius) => (
+          {profile.map((count, radius) => (
             <button
               key={radius}
-              aria-label={`Delta ${radius}/4, worst-case error ${count}/5`}
+              aria-label={`Delta ${radius}/${PRIZE_N}, pair error ${count}/${PRIZE_Q}`}
               aria-pressed={settings.radius === radius}
               className={count <= PRIZE_TARGET_COUNT ? 'prize-profile-safe' : 'prize-profile-bad'}
               onClick={() => update({ radius })}
             >
-              <MathText>{`\\delta=\\frac{${radius}}4`}</MathText>
+              <MathText>{`\\delta=\\frac{${radius}}{${PRIZE_N}}`}</MathText>
               <span className="prize-profile-bar" aria-hidden="true">
                 <i style={{ height: `${(count / PRIZE_Q) * 100}%` }} />
               </span>
               <strong>
-                Worst: {count}/5 <span>({(count / PRIZE_Q) * 100}%)</span>
+                {count}/{PRIZE_Q} <span>({((count / PRIZE_Q) * 100).toFixed(0)}%)</span>
               </strong>
-              {!followWorst && <small>This pair: {profile[radius]}/5</small>}
             </button>
           ))}
         </div>
         <p className="prize-chart-caption">
-          Exact brute force over all input pairs.{' '}
-          {followWorst
-            ? 'Changing δ loads a pair attaining that worst case.'
-            : '“Worst” is over all f,g; “This pair” uses only the vectors below.'}
+          Exact counts for these f,g: all {PRIZE_Q} challenges and {prizeCodewords.length}{' '}
+          codewords. The worst case over all input pairs is not computed.
         </p>
         <div className="prize-delta-control" role="group" aria-label="Proximity Prize controls">
-          <MathText>{`\\delta=\\frac{${settings.radius}}4`}</MathText>
+          <MathText>{`\\delta=\\frac{${settings.radius}}{${PRIZE_N}}`}</MathText>
           <Slider
             label="Delta"
             value={settings.radius}
-            max={4}
+            max={PRIZE_N}
             onChange={(radius) => update({ radius })}
             markers={[
               { value: 0, label: '0' },
-              { value: 4, label: '1' },
+              { value: PRIZE_N, label: '1' },
             ]}
           />
           <div className="prize-threshold">
             <MathText>{`|S|\\ge(1-\\delta)n=${minAgreement}`}</MathText>
-            <span>At least {minAgreement} of 4 points must agree</span>
+            <span>
+              At least {minAgreement} of {PRIZE_N} points must agree
+            </span>
           </div>
         </div>
         <div
@@ -136,35 +122,43 @@ export default function ProximityPrize() {
           aria-label="Prize target"
         >
           <span>
-            <strong>{safe ? 'Target met' : 'Target exceeded'}</strong> · worst-case error{' '}
-            <b data-testid="prize-worst-count">{worst.counts[settings.radius]}/5</b>
+            <strong>{safe ? 'Pair target met' : 'Pair target exceeded'}</strong> · error{' '}
+            <b>
+              {analysis.badCount}/{PRIZE_Q}
+            </b>
           </span>
           <span>
-            Largest tested δ within target: <MathText>{`\\frac{${largestGridRadius}}4`}</MathText>
+            {largestGridRadius < 0 ? (
+              'No tested δ meets the pair target'
+            ) : (
+              <>
+                Largest tested δ for this pair:{' '}
+                <MathText>{`\\frac{${largestGridRadius}}{${PRIZE_N}}`}</MathText>
+              </>
+            )}
           </span>
         </div>
       </section>
       <section className="experiment-panel mca-workbench" aria-label="Proximity Prize experiment">
         <div className="panel-topline">
           <div className="prize-pair-heading">
-            <h3>{followWorst ? 'Worst pair at this δ' : 'Your input pair'}</h3>
+            <h3>Eight-position input pair</h3>
             <span>
               Error probability for these f,g:{' '}
-              <strong data-testid="prize-pair-count">{analysis.badCount}/5</strong>
+              <strong data-testid="prize-pair-count">
+                {analysis.badCount}/{PRIZE_Q}
+              </strong>
             </span>
           </div>
           <div className="mca-actions">
-            <Toggle
-              label="Follow worst pair"
-              checked={followWorst}
-              onChange={(follow) =>
-                patch({
-                  prize: follow
-                    ? worstSettings(settings.radius)
-                    : { ...settings, followWorst: false },
-                })
-              }
-            />
+            {failingChallenge && !selected.bad && (
+              <button
+                className="text-button"
+                onClick={() => update({ alpha: failingChallenge.alpha })}
+              >
+                Show MCA error
+              </button>
+            )}
             <button
               className="text-button"
               onClick={() => {
@@ -198,7 +192,11 @@ export default function ProximityPrize() {
           prefix="Prize"
           codewordLabels={codewordLabels}
           alphaChoices={
-            <div className="mca-challenge-buttons" role="group" aria-label="All 5 alpha values">
+            <div
+              className="mca-challenge-buttons"
+              role="group"
+              aria-label={`All ${PRIZE_Q} alpha values`}
+            >
               {analysis.challenges.map((challenge) => (
                 <button
                   key={challenge.alpha}

@@ -1,6 +1,7 @@
 @layer components {
   .prize-lesson {
     gap: 8px;
+    max-width: 1120px;
   }
   .prize-overview-heading {
     display: flex;
@@ -31,8 +32,9 @@
   }
   .prize-profile-grid {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(9, minmax(72px, 1fr));
+    overflow-x: auto;
+    gap: 6px;
     padding: 2px 14px;
   }
   .prize-profile-grid button {
@@ -69,7 +71,7 @@
     display: flex;
     align-items: flex-end;
     width: 24px;
-    height: 26px;
+    height: 20px;
     background: var(--line);
     border-radius: 3px;
     overflow: hidden;
@@ -155,7 +157,7 @@
     margin: 10px 0 12px;
   }
   .prize-lesson .mca-heading h2 {
-    font-size: 28px;
+    font-size: 26px;
     margin-bottom: 3px;
   }
   .prize-lesson .mca-heading p {
@@ -181,13 +183,15 @@
     padding-inline: 10px;
   }
   .prize-lesson .mca-label-column {
-    width: 40px;
+    width: 36px;
   }
   .prize-lesson .mca-meta-column {
     width: 200px;
   }
   .prize-lesson .mca-tape-table {
-    min-width: 490px;
+    min-width: 640px;
+    max-width: 720px;
+    margin-inline: auto;
   }
   .prize-lesson .mca-tape-table thead th {
     padding: 3px;
@@ -217,7 +221,7 @@
   }
   .prize-lesson .mca-alpha-control {
     padding: 4px 8px;
-    gap: 16px;
+    gap: 10px;
   }
   .prize-lesson .mca-alpha-value {
     font-size: 16px;
@@ -232,10 +236,11 @@
   }
   .prize-lesson .mca-challenge-buttons {
     flex: 1;
+    gap: 4px;
   }
   .prize-lesson .mca-challenge-buttons button {
-    width: 29px;
-    height: 26px;
+    width: 25px;
+    height: 24px;
     font-size: 11px;
   }
   .prize-lesson .mca-random {
@@ -358,8 +363,5 @@
   .prize-profile-grid small {
     color: var(--muted);
     font-size: 9px;
-  }
-  .prize-lesson .mca-actions .toggle {
-    font-size: 10px;
   }
 }

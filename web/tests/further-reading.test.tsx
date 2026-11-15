@@ -18,7 +18,7 @@ it('keeps explanations on their own page and preserves the experiment through re
   expect(screen.queryByText('Why these parameters work')).toBeNull();
   expect(screen.queryByRole('heading', { name: 'Further reading' })).toBeNull();
   expect(container.querySelector('.lesson-footer')).toBeNull();
-  await user.click(screen.getByRole('button', { name: 'Delta 2/4, worst-case error 5/5' }));
+  await user.click(screen.getByRole('button', { name: 'Delta 5/8, pair error 8/17' }));
   const saved = JSON.parse(new URLSearchParams(window.location.search).get('s')!).prize;
   await user.click(screen.getByRole('link', { name: 'Further reading' }));
   await screen.findByRole('heading', { name: 'Further reading', level: 2 });
@@ -43,6 +43,6 @@ it('keeps explanations on their own page and preserves the experiment through re
   );
   await screen.findByRole('heading', { name: 'Papers' });
   await user.click(screen.getByRole('link', { name: '10 Proximity Prize' }));
-  expect(await screen.findByRole('slider', { name: 'Delta' })).toHaveValue('2');
+  expect(await screen.findByRole('slider', { name: 'Delta' })).toHaveValue('5');
   expect(JSON.parse(new URLSearchParams(window.location.search).get('s')!).prize).toEqual(saved);
 });

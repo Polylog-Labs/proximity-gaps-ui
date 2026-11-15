@@ -6,6 +6,7 @@ import { useExperiment } from './state/ExperimentContext';
 import { experimentUrl, type LessonId } from './state/model';
 import { polynomialTex, SUPPORTED_FIELDS } from './core/math';
 import { DEFAULT_MESSAGE } from './core/message';
+import { PRIZE_K, PRIZE_N, PRIZE_Q } from './core/proximityPrize';
 import { MathText } from './components/Math';
 
 export default function App() {
@@ -210,17 +211,17 @@ export default function App() {
                 ) : lesson.parameterMode === 'prize' ? (
                   <>
                     <span>
-                      <MathText>{'\\mathbb F_5'}</MathText>
-                      <span className="parameter-percent">arithmetic modulo 5</span>
+                      <MathText>{`\\mathbb F_{${PRIZE_Q}}`}</MathText>
+                      <span className="parameter-percent">arithmetic modulo {PRIZE_Q}</span>
                     </span>
                     <span>
-                      <MathText>{'k=1,\\ n=4,\\ \\rho=1/4'}</MathText>
+                      <MathText>{`k=${PRIZE_K},\\ n=${PRIZE_N},\\ \\rho=1/4`}</MathText>
                     </span>
                     <span>
-                      <MathText>{'D=\\langle2\\rangle,\\ |D|=2^2'}</MathText>
+                      <MathText>{'D=\\langle2\\rangle,\\ |D|=2^3'}</MathText>
                       <span className="parameter-percent">smooth domain</span>
                     </span>
-                    <span>5 codewords</span>
+                    <span>{PRIZE_Q ** PRIZE_K} codewords</span>
                   </>
                 ) : binary ? (
                   <>
