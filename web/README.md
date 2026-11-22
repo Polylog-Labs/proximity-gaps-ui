@@ -2,7 +2,7 @@
 
 An interactive mathematical notebook for learning Reed–Solomon codes, Hamming distance, and list decoding in the context of STARKs. Built with TypeScript, React, and Vite, with a white paper-like interface, editable tapes, typeset mathematics, and green Hamming balls.
 
-This is a frontend package inside the research repository. It shares the repository's Git history with the Rust code, Markdown notes, and future Lean work.
+The frontend in `web/` is available under the [MIT License](LICENSE). It shares the repository's Git history with the Rust code, Markdown notes, and future Lean work.
 
 ## Run locally
 
